@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <title>黄金排程 · 补充剂提醒助手 | 可添加快捷方式</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #f8f5f0;
+            font-family: system-ui, -apple-system, 'Segoe UI', 'Roboto', 'Helvetica Neue', Helvetica, sans-serif;
+            padding: 20px 16px 40px;
+            color: #2c2418;
+        }
+
+        /* 主容器 */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* 头部状态栏 */
+        .header {
+            background: #ffffffdd;
+            backdrop-filter: blur(8px);
+            border-radius: 32px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.05);
+            border: 1px solid #fff2e4;
+        }
+
+        .current-time {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: #c97e3a;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .time-digital {
+            font-family: monospace;
+            font-size: 2.2rem;
+        }
+
+        .next-alert {
+            background: #f0e4d4;
+            border-radius: 28px;
+            padding: 12px 18px;
+            margin-top: 14px;
+            font-size: 0.9rem;
+        }
+
+        .next-label {
+            font-weight: 600;
+            color: #a95e2a;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .next-title {
+            font-weight: 700;
+            font-size: 1rem;
+            margin: 4px 0 2px;
+        }
+
+        .next-time {
+            font-family: monospace;
+            font-weight: 500;
+            color: #5a3e28;
+        }
+
+        .perm-btn {
+            background: #e7d9ce;
+            border: none;
+            border-radius: 40px;
+            padding: 6px 14px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        /* 快捷指引卡片 - 改为专门的添加快捷方式按钮 */
+        .shortcut-card {
+            background: linear-gradient(135deg, #fff4e6, #ffe8d4);
+            border-radius: 32px;
+            margin-bottom: 20px;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            border: 1px solid #ffdcb0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+
+        .shortcut-text {
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #b4641c;
+        }
+
+        .shortcut-btn {
+            background: #f2c94c;
+            border: none;
+            border-radius: 40px;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #3e2a1c;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .shortcut-btn:active {
+            background: #e2b13b;
+            transform: scale(0.96);
+        }
+
+        /* 指引弹窗 (美化版) */
+        .guide-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+            transition: opacity 0.2s;
+        }
+        .guide-modal-content {
+            background: #fffcf7;
+            border-radius: 48px;
+            max-width: 340px;
+            width: 100%;
+            padding: 28px 24px 32px;
+            box-shadow: 0 25px 40px rgba(0,0,0,0.3);
+            text-align: left;
+            border: 1px solid #f5e1c4;
+            animation: fadeUp 0.2s ease;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+        .guide-modal h3 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #b97f3a;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .guide-step {
+            margin: 20px 0 16px;
+        }
+        .guide-step p {
+            font-weight: 600;
+            margin: 8px 0 4px;
+            font-size: 0.9rem;
+            color: #5a3a1f;
+        }
+        .guide-step small {
+            font-size: 0.8rem;
+            color: #8f6a3e;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .step-icon {
+            background: #fbead5;
+            border-radius: 30px;
+            padding: 10px 16px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #a7581c;
+            margin-top: 8px;
+            text-align: center;
+        }
+        .close-guide-btn {
+            background: #e6d5c0;
+            width: 100%;
+            border: none;
+            padding: 14px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 1rem;
+            color: #5a3a1a;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .close-guide-btn:active {
+            background: #cfbc9f;
+        }
+
+        /* 原有卡片样式 */
+        .card {
+            background: white;
+            border-radius: 32px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+            transition: all 0.2s;
+            border: 1px solid #f0e2d4;
+        }
+
+        .card-header {
+            background: #fef7e8;
+            padding: 16px 20px;
+            border-bottom: 1px solid #ffedd5;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+        }
+
+        .phase-name {
+            font-size: 1.35rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #b97f3a, #e2a15c);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .badge {
+            background: #e7d9ce;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #6b4c2c;
+        }
+
+        .card-content {
+            padding: 16px 20px 20px;
+        }
+
+        .supplement-desc {
+            background: #fefaf5;
+            padding: 14px;
+            border-radius: 24px;
+            font-size: 0.88rem;
+            line-height: 1.45;
+            margin-bottom: 16px;
+            border-left: 4px solid #e2b17b;
+        }
+
+        .reminder-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 12px 0 8px;
+        }
+
+        .time-picker {
+            background: #f2ede6;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 48px;
+            font-size: 0.9rem;
+            font-family: monospace;
+            font-weight: 500;
+            color: #3e2a1c;
+            flex: 1;
+            min-width: 110px;
+        }
+
+        .btn-small {
+            background: #fff0e2;
+            border: 1px solid #e7cdb3;
+            border-radius: 40px;
+            padding: 8px 16px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #8b623f;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .intake-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px dashed #eedbcb;
+        }
+
+        .reset-all {
+            background: #e2cfba;
+            color: #5c401f;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 6px;
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+            border: none;
+        }
+        .footer-note {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #aa8e6e;
+            margin-top: 20px;
+            padding: 12px;
+            background: #f0ebe3;
+            border-radius: 40px;
+        }
+        button {
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="current-time">
+            <span>⏰ 黄金时刻</span>
+            <span class="time-digital" id="liveClock">--:--</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+            <span style="font-size: 0.75rem;">🔔 通知状态</span>
+            <button id="requestNotifBtn" class="perm-btn">🔔 允许提醒</button>
+        </div>
+        <div id="nextReminderBox" class="next-alert">
+            <div class="next-label">⏳ 下一个补充提醒</div>
+            <div id="nextReminderText" class="next-title">— 加载中 —</div>
+            <div id="nextReminderTime" class="next-time"></div>
+        </div>
+    </div>
+
+    <!-- 添加快捷方式卡片 - 改为纯手动指引 -->
+    <div class="shortcut-card">
+        <div class="shortcut-text">
+            📱 添加到主屏幕 · 快捷启动
+        </div>
+        <button id="installGuideBtn" class="shortcut-btn">
+            ➕ 安装指引
+        </button>
+    </div>
+
+    <div id="cardsContainer"></div>
+    <button id="globalResetBtn" class="reset-all">🔄 重置今日所有提醒 (重新触发)</button>
+    <div class="footer-note">
+        💡 提醒依赖浏览器通知，请允许通知。<br>
+        ✅ 勾选【今日已服用】记录状态，每日自动重置。<br>
+        📌 提示：点击「安装指引」学习如何将本页添加到主屏幕（适用 iPhone 和 Android）。
+    </div>
+</div>
+
+<script>
+    // ======================= 黄金排程 · 阶段数据 =======================
+    const phasesData = [
+        {
+            id: "phase1",
+            name: "🌅 第一階段 · 清晨空腹",
+            shortTitle: "沸石排毒",
+            detail: "💊 Zeolite（沸石）2 顆\n⚠️ 鐵律配水：必须配 500 mL 大杯純水！\n💡 原理：空腹让沸石抓取重金属，这杯水防止便秘，不可吃其他矿物质。",
+            supplementList: "Zeolite 2顆 + 500ml純水",
+            notificationMsg: "🌅 第一阶段：清晨空腹排毒\n✔ 服用：Zeolite（沸石）2顆\n💧 铁律：搭配500mL大杯純水！\n⛔ 暂不吃其他矿物质/食物。",
+            defaultTime: "06:30"
+        },
+        {
+            id: "phase2",
+            name: "☕ 第二階段 · 早餐時段",
+            shortTitle: "醒腦腸道",
+            detail: "☕ 咖啡中加入：Collagen powder、Apple Pectin、薑粉\n🍓 水果中加入：Flaxseed oil 或 核桃油\n💊 餐後服用：Magnesium L-Threonate、維他命B1",
+            supplementList: "膠原蛋白+蘋果果膠+薑粉｜亞麻籽油｜L-蘇氨酸鎂+B1",
+            notificationMsg: "☕ 早餐时段提醒\n✔ 咖啡添加：胶原蛋白粉 + 苹果果胶 + 薑粉\n✔ 水果搭配：亞麻籽油/核桃油 (优质油脂)\n✔ 餐后服用：Magnesium L-Threonate + 維生素B1\n🧠 帮助脑雾消除，提升专注力。",
+            defaultTime: "08:30"
+        },
+        {
+            id: "phase3",
+            name: "🏋️ 第三階段 · 午餐前",
+            shortTitle: "肌酸充能",
+            detail: "💊 Creatine（肌酸）\n⚠️ 鐵律配水：必须配 500 mL 水或随午餐大杯水！\n💡 原理：水分进入肌肉细胞，储备ATP能量。",
+            supplementList: "Creatine 肌酸 + 500ml水",
+            notificationMsg: "🏋️ 午餐前补充：肌酸 Creatine\n💧 务必搭配500mL水或随餐大量饮水，助力肌肉储水+ATP能量。",
+            defaultTime: "11:30"
+        },
+        {
+            id: "phase4",
+            name: "🧹 第四階段 · 16:00-17:00",
+            shortTitle: "腸道清道夫",
+            detail: "💊 Psyllium（洋車前子殼）\n⚠️ 鐵律配水：必须配 500 mL 純水！\n💡 原理：包裹毒素+废物，促进排便通畅。",
+            supplementList: "洋車前子殼 + 500ml純水",
+            notificationMsg: "🧹 下午肠道清扫：Psyllium (洋車前子殼)\n💧 配合500mL纯水，形成凝胶扫把，带走沸石残渣与毒素。",
+            defaultTime: "16:00"
+        },
+        {
+            id: "phase5",
+            name: "🌙 第五階段 · 晚飯後",
+            shortTitle: "脂溶性黃金期",
+            detail: "🍳 煮食使用牛油果油。\n💊 飯後立刻服用：Krill oil、D3+K2、Vitamin E、Vitamin A、Selenium+copper\n💡 原理：脂肪载体大幅提升脂溶性维生素吸收。",
+            supplementList: "磷蝦油｜D3+K2｜Vit E｜Vit A｜硒+銅",
+            notificationMsg: "🌙 晚饭后脂溶性黄金期\n✔ 服用：磷蝦油（Krill oil）+ D3+K2 + 维生素E + 维生素A + 硒+铜\n🥑 晚餐使用牛油果油，吸收率最大化。",
+            defaultTime: "19:00"
+        },
+        {
+            id: "phase6",
+            name: "🛌 第六階段 · 睡前1小時",
+            shortTitle: "深睡+益生菌",
+            detail: "💊 Magnesium Glycinate（甘氨酸鎂）、Lactobacillus Salivarius、Clostridium butyricum\n💡 原理：放松神经，益生菌定植，支持肝脏排毒。",
+            supplementList: "甘氨酸鎂｜唾液乳桿菌｜酪酸菌",
+            notificationMsg: "🛌 睡前1小时黄金补剂\n✔ Magnesium Glycinate (放松助眠)\n✔ 唾液乳桿菌 + 酪酸菌 (益生菌定植)\n🌙 支持深度睡眠与肝臟夜间排毒。",
+            defaultTime: "21:00"
+        }
+    ];
+
+    // ---------- 全局存储key ----------
+    const STORAGE_TIMES = "golden_schedule_times";
+    const STORAGE_LAST_NOTIFIED = "golden_last_notified";
+
+    function getTodayStr() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function loadCustomTimes() {
+        const stored = localStorage.getItem(STORAGE_TIMES);
+        if(stored) try{ return JSON.parse(stored); } catch(e){}
+        return {};
+    }
+    function saveCustomTimes(timesObj) {
+        localStorage.setItem(STORAGE_TIMES, JSON.stringify(timesObj));
+    }
+    function getNotifiedStatus() {
+        const stored = localStorage.getItem(STORAGE_LAST_NOTIFIED);
+        if(stored) try{ return JSON.parse(stored); } catch(e){}
+        return {};
+    }
+    function setNotifiedStatus(phaseId, dateStr) {
+        const current = getNotifiedStatus();
+        current[phaseId] = dateStr;
+        localStorage.setItem(STORAGE_LAST_NOTIFIED, JSON.stringify(current));
+    }
+    function resetPhaseNotification(phaseId) {
+        const status = getNotifiedStatus();
+        delete status[phaseId];
+        localStorage.setItem(STORAGE_LAST_NOTIFIED, JSON.stringify(status));
+        updateNextReminderUI();
+    }
+    function resetAllTodayNotifications() {
+        const today = getTodayStr();
+        const status = getNotifiedStatus();
+        for(let phase of phasesData){
+            if(status[phase.id] === today) delete status[phase.id];
+        }
+        localStorage.setItem(STORAGE_LAST_NOTIFIED, JSON.stringify(status));
+        updateNextReminderUI();
+        showToast("✅ 所有阶段提醒状态已重置，今天内会再次提醒");
+    }
+    function getPhaseTime(phaseId) {
+        const custom = loadCustomTimes();
+        if(custom[phaseId]) return custom[phaseId];
+        const def = phasesData.find(p=>p.id===phaseId)?.defaultTime;
+        return def || "08:00";
+    }
+    function setPhaseTime(phaseId, timeStr) {
+        const custom = loadCustomTimes();
+        custom[phaseId] = timeStr;
+        saveCustomTimes(custom);
+        const today = getTodayStr();
+        const notified = getNotifiedStatus();
+        if(notified[phaseId] === today){
+            delete notified[phaseId];
+            localStorage.setItem(STORAGE_LAST_NOTIFIED, JSON.stringify(notified));
+        }
+        renderCards();
+        updateNextReminderUI();
+    }
+
+    // 通知相关
+    function sendNotification(phase) {
+        if (!("Notification" in window)) return;
+        if (Notification.permission === "granted") {
+            const title = `⏰ 补充剂提醒 · ${phase.name}`;
+            const body = phase.notificationMsg + "\n\n📋 详细查看卡片内容 ☝️";
+            new Notification(title, { body, icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c97e3a'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/%3E%3C/svg%3E", silent: false });
+            if (navigator.vibrate) navigator.vibrate(200);
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+    }
+
+    function checkRemindersAndNotify() {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        const todayStr = getTodayStr();
+        const notifiedMap = getNotifiedStatus();
+        for(let phase of phasesData) {
+            const timeStr = getPhaseTime(phase.id);
+            const [hour, minute] = timeStr.split(":").map(Number);
+            if(hour === currentHour && minute === currentMinute) {
+                if(notifiedMap[phase.id] !== todayStr) {
+                    sendNotification(phase);
+                    setNotifiedStatus(phase.id, todayStr);
+                }
+            }
+        }
+        updateNextReminderUI();
+        updateClock();
+    }
+
+    function getNextReminder() {
+        const now = new Date();
+        const todayStr = getTodayStr();
+        const notifiedMap = getNotifiedStatus();
+        let nearest = null;
+        let nearestMinutesDiff = Infinity;
+        for(let phase of phasesData) {
+            const timeStr = getPhaseTime(phase.id);
+            const [hour, minute] = timeStr.split(":").map(Number);
+            const reminderDate = new Date(now);
+            reminderDate.setHours(hour, minute, 0, 0);
+            const alreadyNotifiedToday = (notifiedMap[phase.id] === todayStr);
+            if(alreadyNotifiedToday) continue;
+            let diff = reminderDate - now;
+            let targetDate = reminderDate;
+            let isToday = true;
+            if(diff < 0) {
+                const tomorrow = new Date(now);
+                tomorrow.setDate(tomorrow.getDate()+1);
+                tomorrow.setHours(hour, minute, 0,0);
+                diff = tomorrow - now;
+                targetDate = tomorrow;
+                isToday = false;
+            }
+            const minutes = Math.floor(diff / 60000);
+            if(minutes < nearestMinutesDiff){
+                nearestMinutesDiff = minutes;
+                nearest = { phase, targetDate, isToday };
+            }
+        }
+        return nearest;
+    }
+    function updateNextReminderUI() {
+        const next = getNextReminder();
+        const textDiv = document.getElementById("nextReminderText");
+        const timeDiv = document.getElementById("nextReminderTime");
+        if(next && next.phase) {
+            const phase = next.phase;
+            const timeStr = getPhaseTime(phase.id);
+            const displayDate = next.isToday ? `今天 ${timeStr}` : `明天 ${timeStr}`;
+            textDiv.innerHTML = `✨ ${phase.name} · ${phase.shortTitle}`;
+            timeDiv.innerHTML = `⏱️ ${displayDate}  ·  ${next.isToday ? '待提醒' : '即将提醒'}`;
+        } else {
+            textDiv.innerHTML = "🎉 所有阶段今日均已提醒完毕！";
+            timeDiv.innerHTML = "可点击「重置今日提醒」再次提醒";
+        }
+    }
+
+    // 服用记录
+    function getIntakeKey(phaseId, dateStr) { return `intake_${phaseId}_${dateStr}`; }
+    function isIntakeToday(phaseId) {
+        const today = getTodayStr();
+        return localStorage.getItem(getIntakeKey(phaseId, today)) === "true";
+    }
+    function setIntakeToday(phaseId, checked) {
+        const today = getTodayStr();
+        localStorage.setItem(getIntakeKey(phaseId, today), checked ? "true" : "false");
+    }
+
+    // 渲染所有卡片
+    function renderCards() {
+        const container = document.getElementById("cardsContainer");
+        if(!container) return;
+        let html = "";
+        for(let phase of phasesData) {
+            const currentTime = getPhaseTime(phase.id);
+            const isChecked = isIntakeToday(phase.id);
+            const detailHtml = phase.detail.replace(/\n/g, '<br>');
+            html += `
+                <div class="card" data-phase-id="${phase.id}">
+                    <div class="card-header">
+                        <span class="phase-name">${phase.name}</span>
+                        <span class="badge">${phase.shortTitle}</span>
+                    </div>
+                    <div class="card-content">
+                        <div class="supplement-desc">
+                            <strong>📋 补充清单</strong><br>
+                            ${phase.supplementList}<br><br>
+                            <strong>⚙️ 细节</strong><br>
+                            ${detailHtml}
+                        </div>
+                        <div class="reminder-row">
+                            <label style="font-size:0.8rem; font-weight:500;">⏰ 提醒时间</label>
+                            <input type="time" class="time-picker" data-id="${phase.id}" value="${currentTime}">
+                            <button class="btn-small test-notify-btn" data-id="${phase.id}" data-name="${phase.name}" data-msg="${phase.notificationMsg.replace(/"/g, '&quot;')}">🔔 测试</button>
+                        </div>
+                        <div class="reminder-row" style="justify-content: flex-end; gap: 12px;">
+                            <button class="btn-small reset-phase-btn" data-id="${phase.id}">⟳ 重置今日提醒</button>
+                        </div>
+                        <div class="intake-check">
+                            <input type="checkbox" id="chk_${phase.id}" ${isChecked ? "checked" : ""}>
+                            <label for="chk_${phase.id}">✅ 今日已服用 (记录)</label>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+        // 绑定事件
+        document.querySelectorAll(".time-picker").forEach(input => {
+            const phaseId = input.getAttribute("data-id");
+            input.addEventListener("change", (e) => {
+                if(e.target.value) setPhaseTime(phaseId, e.target.value);
+                renderCards();
+                updateNextReminderUI();
+            });
+        });
+        document.querySelectorAll(".test-notify-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const phaseId = btn.getAttribute("data-id");
+                const phase = phasesData.find(p=>p.id===phaseId);
+                if(phase) sendNotification(phase);
+                showToast(`🔔 已发送「${phase?.name}」测试提醒`);
+            });
+        });
+        document.querySelectorAll(".reset-phase-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const phaseId = btn.getAttribute("data-id");
+                resetPhaseNotification(phaseId);
+                showToast(`🔄 已重置「${phasesData.find(p=>p.id===phaseId)?.name}」今日提醒标记`);
+                updateNextReminderUI();
+                renderCards();
+            });
+        });
+        for(let phase of phasesData) {
+            const cb = document.getElementById(`chk_${phase.id}`);
+            if(cb) {
+                cb.addEventListener("change", (e) => {
+                    setIntakeToday(phase.id, e.target.checked);
+                    showToast(e.target.checked ? `📝 已记录 ${phase.name} 服用 ✅` : `📝 取消服用记录`);
+                });
+            }
+        }
+    }
+
+    // 全局按钮 & 通知权限
+    function setupGlobalActions() {
+        document.getElementById("globalResetBtn")?.addEventListener("click", () => {
+            resetAllTodayNotifications();
+            renderCards();
+            updateNextReminderUI();
+        });
+        document.getElementById("requestNotifBtn")?.addEventListener("click", () => {
+            if (!("Notification" in window)) alert("浏览器不支持通知");
+            else if (Notification.permission === "granted") showToast("🔔 通知权限已启用");
+            else if (Notification.permission !== "denied") Notification.requestPermission().then(perm => {
+                if (perm === "granted") showToast("✅ 提醒已就绪");
+                else showToast("⚠️ 未开启通知");
+            });
+            else showToast("🔕 通知被禁用");
+        });
+    }
+
+    // 轻提示
+    let toastTimeout;
+    function showToast(msg) {
+        let toastEl = document.getElementById("dynamicToast");
+        if(!toastEl){
+            const div = document.createElement("div");
+            div.id = "dynamicToast";
+            div.style.position = "fixed";
+            div.style.bottom = "70px";
+            div.style.left = "20px";
+            div.style.right = "20px";
+            div.style.backgroundColor = "#2c2418e6";
+            div.style.color = "#f9e2c1";
+            div.style.padding = "12px";
+            div.style.borderRadius = "60px";
+            div.style.textAlign = "center";
+            div.style.fontSize = "0.85rem";
+            div.style.zIndex = "999";
+            div.style.backdropFilter = "blur(8px)";
+            document.body.appendChild(div);
+            toastEl = div;
+        }
+        toastEl.textContent = msg;
+        toastEl.style.opacity = "1";
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => toastEl.style.opacity = "0", 2200);
+    }
+
+    // 安装指引弹窗 (纯手动步骤，适合 iPhone / Android)
+    function showInstallGuide() {
+        // 移除已存在的弹窗
+        const existingModal = document.querySelector('.guide-modal');
+        if(existingModal) existingModal.remove();
+
+        const modal = document.createElement('div');
+        modal.className = 'guide-modal';
+        modal.innerHTML = `
+            <div class="guide-modal-content">
+                <h3>📲 添加快捷方式</h3>
+                <div class="guide-step">
+                    <p>🍎 iPhone (Safari) :</p>
+                    <small>1. 点击底部「分享」图标 <span style="font-size:1.2rem">⎔</span></small>
+                    <small>2. 向下滑动，点击「添加到主屏幕」</small>
+                    <small>3. 编辑名称后点击「添加」</small>
+                    <div class="step-icon">💡 必须使用 Safari 浏览器</div>
+                </div>
+                <div class="guide-step">
+                    <p>🤖 Android (Chrome) :</p>
+                    <small>1. 点击右上角「⋮」菜单</small>
+                    <small>2. 选择「添加到主屏幕」或「安装应用」</small>
+                    <small>3. 确认添加即可</small>
+                </div>
+                <div style="background:#f5ede2; border-radius: 36px; padding: 12px; margin: 12px 0; text-align:center;">
+                    ⭐ 添加后，每天提醒自动保留，像App一样便捷
+                </div>
+                <button class="close-guide-btn">好的，立即尝试</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        const closeBtn = modal.querySelector('.close-guide-btn');
+        closeBtn.addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => {
+            if(e.target === modal) modal.remove();
+        });
+    }
+
+    // 时钟刷新
+    function updateClock() {
+        const d = new Date();
+        const hh = d.getHours().toString().padStart(2,'0');
+        const mm = d.getMinutes().toString().padStart(2,'0');
+        const ss = d.getSeconds().toString().padStart(2,'0');
+        const clockSpan = document.getElementById("liveClock");
+        if(clockSpan) clockSpan.innerText = `${hh}:${mm}:${ss}`;
+    }
+
+    let intervalId;
+    function startScheduler() {
+        if(intervalId) clearInterval(intervalId);
+        checkRemindersAndNotify();
+        intervalId = setInterval(() => checkRemindersAndNotify(), 60000);
+        setInterval(() => updateClock(), 1000);
+    }
+
+    // 添加安装指引按钮事件
+    function initShortcutFeature() {
+        const guideBtn = document.getElementById('installGuideBtn');
+        if(guideBtn) {
+            guideBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                showInstallGuide();
+            });
+        }
+    }
+
+    function init() {
+        renderCards();
+        startScheduler();
+        setupGlobalActions();
+        initShortcutFeature();
+        updateClock();
+        if (Notification.permission === "granted") showToast("🔔 通知已授权，将准时提醒");
+        else if (Notification.permission !== "denied") {
+            setTimeout(() => {
+                if (Notification.permission === "default") {
+                    Notification.requestPermission();
+                }
+            }, 1000);
+        }
+        updateNextReminderUI();
+    }
+
+    init();
+</script>
+</body>
+</html>
